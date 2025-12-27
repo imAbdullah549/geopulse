@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,

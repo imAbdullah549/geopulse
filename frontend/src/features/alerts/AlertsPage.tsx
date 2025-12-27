@@ -1,16 +1,9 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Table,
   TableBody,
@@ -29,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { SeverityBadge, StatusBadge } from "./Badges";
 import { AlertsFilters } from "./AlertsFilters";
+import { AlertsPagination } from "./AlertsPagination";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 
 const AlertRow = memo(function AlertRow({ a }: { a: Alert }) {
@@ -209,57 +203,17 @@ export function AlertsPage() {
               </ScrollArea>
             </div>
           )}
-          <div className="shrink-0 flex flex-col gap-2  text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-            <div>
-              Total: {total} • Showing: {data?.results.length ?? 0}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rows:</span>
-
-              <Select
-                value={String(pageSize)}
-                onValueChange={(v) => setPageSize(Number(v))}
-              >
-                <SelectTrigger className="w-[90px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!canPrev}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Prev
-              </Button>
-
-              <div className="min-w-[120px] text-center">
-                Page <span className="font-medium text-foreground">{page}</span>{" "}
-                of{" "}
-                <span className="font-medium text-foreground">
-                  {totalPages}
-                </span>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!canNext}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <AlertsPagination
+            total={total}
+            showing={data?.results.length ?? 0}
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            canPrev={canPrev}
+            canNext={canNext}
+          />
         </CardContent>
       </Card>
     </div>
