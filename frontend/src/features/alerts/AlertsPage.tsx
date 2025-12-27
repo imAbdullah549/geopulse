@@ -1,8 +1,7 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,46 +23,12 @@ import {
 import { useGetAlertsQuery } from "./alertsApi";
 import type { Severity } from "@/shared/types/device";
 import type { Alert, AlertStatus } from "@/shared/types/alert";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { SerializedError } from "@reduxjs/toolkit";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-function SeverityBadge({ value }: { value: Severity }) {
-  const variant =
-    value === "high"
-      ? "destructive"
-      : value === "medium"
-      ? "secondary"
-      : "outline";
-  const label = value.charAt(0).toUpperCase() + value.slice(1);
-  return (
-    <Badge variant={variant} title={label}>
-      {label}
-    </Badge>
-  );
-}
-
-function StatusBadge({ value }: { value: AlertStatus }) {
-  const variant =
-    value === "resolved"
-      ? "secondary"
-      : value === "acknowledged"
-      ? "outline"
-      : "default";
-  const label = value.charAt(0).toUpperCase() + value.slice(1);
-  return (
-    <Badge variant={variant} title={label}>
-      {label}
-    </Badge>
-  );
-}
-
-function useDebounce<T>(value: T, delay = 400) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
+import { SeverityBadge, StatusBadge } from "./Badges";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 
 const AlertRow = memo(function AlertRow({ a }: { a: Alert }) {
   return (
@@ -109,20 +74,36 @@ export function AlertsPage() {
   const { data, isLoading, isError, isFetching, refetch, error } =
     useGetAlertsQuery(queryArgs);
 
-  const getErrorMessage = (err: unknown) => {
+  const isFetchError = (e: unknown): e is FetchBaseQueryError =>
+    typeof e === "object" && e !== null && "status" in e;
+
+  const getErrorMessage = (err: unknown): string => {
     if (!err) return "Unknown error";
     if (typeof err === "string") return err;
-    if (typeof err === "object" && err !== null) {
-      if ("status" in err) {
-        const e = err as any;
-        if (typeof e.error === "string") return e.error;
-        if (e.data) {
-          if (typeof e.data === "string") return e.data;
-          if (e.data.message) return e.data.message;
-        }
+
+    // RTK Query "fetch" error
+    if (isFetchError(err)) {
+      // error can be { status, data } or { error: string }
+      if ("error" in err && typeof (err as any).error === "string")
+        return (err as any).error;
+
+      const data = (err as FetchBaseQueryError).data;
+      if (data) {
+        if (typeof data === "string") return data;
+        if (typeof (data as any).message === "string")
+          return (data as any).message;
       }
-      if ((err as any).message) return (err as any).message;
     }
+
+    // Serialized errors or plain Error-like objects
+    if (typeof err === "object" && err !== null && "message" in (err as any)) {
+      const msg = (err as any).message;
+      if (typeof msg === "string") return msg;
+    }
+
+    const serializedMessage = (err as SerializedError).message;
+    if (typeof serializedMessage === "string") return serializedMessage;
+
     return "Unknown error";
   };
 
