@@ -15,7 +15,7 @@ import {
 
 import { useGetAlertsQuery } from "./alertsApi";
 import type { Severity } from "@/shared/types/device";
-import type { Alert, AlertStatus } from "@/shared/types/alert";
+import type { AlertStatus } from "@/shared/types/alert";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,19 +25,34 @@ import { AlertsFilters } from "./AlertsFilters";
 import { AlertsPagination } from "./AlertsPagination";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 
-const AlertRow = memo(function AlertRow({ a }: { a: Alert }) {
+type AlertRowProps = {
+  id: string;
+  title: string;
+  deviceId: string;
+  severity: Severity;
+  status: AlertStatus;
+  createdAt: string;
+};
+
+const AlertRow = memo(function AlertRow({
+  title,
+  deviceId,
+  severity,
+  status,
+  createdAt,
+}: AlertRowProps) {
   return (
     <TableRow>
-      <TableCell className="font-medium">{a.title}</TableCell>
-      <TableCell>{a.deviceId}</TableCell>
+      <TableCell className="font-medium">{title}</TableCell>
+      <TableCell>{deviceId}</TableCell>
       <TableCell>
-        <SeverityBadge value={a.severity} />
+        <SeverityBadge value={severity} />
       </TableCell>
       <TableCell>
-        <StatusBadge value={a.status} />
+        <StatusBadge value={status} />
       </TableCell>
       <TableCell className="text-muted-foreground">
-        {new Date(a.createdAt).toLocaleString()}
+        {new Date(createdAt).toLocaleString()}
       </TableCell>
     </TableRow>
   );
@@ -187,7 +202,17 @@ export function AlertsPage() {
                   </TableHeader>
                   <TableBody>
                     {data?.results.length ? (
-                      data.results.map((a) => <AlertRow key={a.id} a={a} />)
+                      data.results.map((a) => (
+                        <AlertRow
+                          key={a.id}
+                          id={a.id}
+                          title={a.title}
+                          deviceId={a.deviceId}
+                          severity={a.severity}
+                          status={a.status}
+                          createdAt={a.createdAt}
+                        />
+                      ))
                     ) : (
                       <TableRow>
                         <TableCell
