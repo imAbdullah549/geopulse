@@ -28,6 +28,7 @@ import type { SerializedError } from "@reduxjs/toolkit";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { SeverityBadge, StatusBadge } from "./Badges";
+import { AlertsFilters } from "./AlertsFilters";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 
 const AlertRow = memo(function AlertRow({ a }: { a: Alert }) {
@@ -121,7 +122,12 @@ export function AlertsPage() {
           <CardTitle className="flex items-center gap-2">
             Alerts
             {isFetching && (
-              <span className="text-sm text-muted-foreground">Updating…</span>
+              <span
+                className="text-sm text-muted-foreground"
+                aria-live="polite"
+              >
+                Updating…
+              </span>
             )}
           </CardTitle>
           <Button
@@ -138,46 +144,14 @@ export function AlertsPage() {
 
         <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
           {/* Filters */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Input
-              aria-label="Search alerts"
-              placeholder="Search by title or device id…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <Select
-              aria-label="Filter by severity"
-              value={severity}
-              onValueChange={(v) => setSeverity(v as Severity | "all")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              aria-label="Filter by status"
-              value={status}
-              onValueChange={(v) => setStatus(v as AlertStatus | "all")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <AlertsFilters
+            search={search}
+            setSearch={setSearch}
+            severity={severity}
+            setSeverity={setSeverity}
+            status={status}
+            setStatus={setStatus}
+          />
 
           {/* Content */}
           {isLoading ? (
