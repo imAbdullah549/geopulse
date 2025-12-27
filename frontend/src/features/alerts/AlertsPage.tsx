@@ -24,6 +24,7 @@ import { SeverityBadge, StatusBadge } from "./Badges";
 import { AlertsFilters } from "./AlertsFilters";
 import { AlertsPagination } from "./AlertsPagination";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { usePagination } from "@/lib/hooks/usePagination";
 
 type AlertRowProps = {
   id: string;
@@ -63,8 +64,16 @@ export function AlertsPage() {
   const debouncedSearch = useDebounce(search, 400);
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [status, setStatus] = useState<AlertStatus | "all">("all");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    canPrev,
+    canNext,
+    setTotal,
+  } = usePagination(1, 20);
 
   const queryArgs = useMemo(
     () => ({
@@ -79,10 +88,15 @@ export function AlertsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, severity, status, pageSize]);
+  }, [debouncedSearch, severity, status, pageSize, setPage]);
 
   const { data, isLoading, isError, isFetching, refetch, error } =
     useGetAlertsQuery(queryArgs);
+
+  // keep hook informed of latest total count from response
+  useEffect(() => {
+    setTotal(data?.count ?? 0);
+  }, [data?.count, setTotal]);
 
   const isFetchError = (e: unknown): e is FetchBaseQueryError =>
     typeof e === "object" && e !== null && "status" in e;
@@ -120,9 +134,6 @@ export function AlertsPage() {
   const errorMessage = getErrorMessage(error);
 
   const total = data?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
 
   return (
     <div className="h-full p-4">
