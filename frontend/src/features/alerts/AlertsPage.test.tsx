@@ -17,6 +17,10 @@ test("renders alerts rows", async () => {
 });
 
 test("renders first page of alerts (20 rows)", async () => {
+  // Spy on metrics
+  const telemetry = await import("@/lib/telemetry");
+  const metricSpy = vi.spyOn(telemetry, "captureMetric");
+
   renderWithProviders(<AlertsPage />);
 
   const table = await screen.findByRole("table");
@@ -24,6 +28,11 @@ test("renders first page of alerts (20 rows)", async () => {
 
   // 1 header row + 20 body rows
   expect(rows.length).toBe(21);
+
+  // Metrics should be reported: api fetch and time to first table
+  await waitFor(() => expect(metricSpy).toHaveBeenCalled());
+  expect(metricSpy).toHaveBeenCalledWith("api_fetch", expect.anything());
+  expect(metricSpy).toHaveBeenCalledWith("time_to_first_table", expect.any(Number), expect.anything());
 });
 
 test("next page loads page 2", async () => {

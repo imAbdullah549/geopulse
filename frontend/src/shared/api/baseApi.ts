@@ -11,10 +11,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
  */
 export function computeBaseUrl(
   rawBase = import.meta.env.VITE_API_BASE_URL ?? "/api",
-  env: Record<string, string | undefined> = process.env as Record<
-    string,
-    string | undefined
-  >,
+  env: Record<string, string | undefined> = (typeof process !== "undefined" &&
+    (process as any).env) ||
+    {},
   isWindow = typeof window !== "undefined"
 ) {
   const shouldPrefix =
@@ -30,9 +29,42 @@ export function computeBaseUrl(
 
 const baseUrl = computeBaseUrl();
 
+// Wrap fetchBaseQuery to measure request durations and report lightweight metrics.
+const rawBaseQuery = fetchBaseQuery({ baseUrl });
+
+const timedBaseQuery = async (args: any, api: any, extraOptions: any) => {
+  const start = Date.now();
+  const result = await rawBaseQuery(args, api, extraOptions);
+  const duration = Date.now() - start;
+
+  // collect basic context
+  const url = typeof args === "string" ? args : (args as any).url;
+  const method =
+    typeof args === "string" ? "GET" : (args as any).method ?? "GET";
+  let status: number | string = "unknown";
+  if ((result as any).error && (result as any).error.status) {
+    status = (result as any).error.status;
+  } else if ((result as any).meta?.response?.status) {
+    status = (result as any).meta.response.status;
+  } else if ((result as any).data && (result as any).status) {
+    status = (result as any).status;
+  }
+
+  // Report metric asynchronously; swallow failures to avoid affecting app behavior
+  try {
+    import("@/lib/telemetry").then((mod) =>
+      mod.captureMetric("api_fetch", { url, method, status, duration })
+    );
+  } catch (e) {
+    // no-op
+  }
+
+  return result;
+};
+
 export const baseApi = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl }),
+  baseQuery: timedBaseQuery,
   tagTypes: ["Device", "Alert"],
   endpoints: () => ({}),
 });
