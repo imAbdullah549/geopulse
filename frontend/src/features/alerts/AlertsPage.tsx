@@ -27,7 +27,6 @@ import { useDebounce } from "@/lib/hooks/useDebounce";
 import { usePagination } from "@/lib/hooks/usePagination";
 
 type AlertRowProps = {
-  id: string;
   title: string;
   deviceId: string;
   severity: Severity;
@@ -78,8 +77,8 @@ export function AlertsPage() {
   const queryArgs = useMemo(
     () => ({
       search: debouncedSearch.trim() || undefined,
-      severity,
-      status,
+      severity: severity === "all" ? undefined : severity,
+      status: status === "all" ? undefined : status,
       page,
       pageSize,
     }),
@@ -116,6 +115,7 @@ export function AlertsPage() {
         if (typeof data === "string") return data;
         if (typeof (data as any).message === "string")
           return (data as any).message;
+        if (typeof (data as any).error === "string") return (data as any).error;
       }
     }
 
@@ -137,7 +137,7 @@ export function AlertsPage() {
 
   return (
     <div className="h-full p-4">
-      <Card className="h-full flex">
+      <Card className="h-full flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             Alerts
@@ -162,7 +162,7 @@ export function AlertsPage() {
           </Button>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
+        <CardContent className="flex-1 min-h-0 flex flex-col space-y-4 overflow-hidden">
           {/* Filters */}
           <AlertsFilters
             search={search}
@@ -216,7 +216,6 @@ export function AlertsPage() {
                       data.results.map((a) => (
                         <AlertRow
                           key={a.id}
-                          id={a.id}
                           title={a.title}
                           deviceId={a.deviceId}
                           severity={a.severity}

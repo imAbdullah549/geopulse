@@ -13,7 +13,7 @@ const alerts: Alert[] = Array.from({ length: 80 }, (_, i) => ({
 }));
 
 export const handlers = [
-  http.get("/api/alerts", ({ request }) => {
+  http.get("*/api/alerts", ({ request }) => {
     const url = new URL(request.url);
     const search = (url.searchParams.get("search") ?? "").toLowerCase();
     const severity = url.searchParams.get("severity"); // low|medium|high
@@ -40,7 +40,7 @@ export const handlers = [
     return HttpResponse.json({ results, count, page, pageSize });
   }),
 
-  http.post("/api/alerts/bulk", async ({ request }) => {
+  http.post("*/api/alerts/bulk", async ({ request }) => {
     const body = (await request.json()) as { ids: string[]; status: string };
     // mock response only (we’ll implement real mutation behavior later)
     return HttpResponse.json({ updated: body.ids.length });

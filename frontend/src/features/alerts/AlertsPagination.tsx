@@ -50,7 +50,7 @@ export function AlertsPagination({
           value={String(pageSize)}
           onValueChange={(v) => setPageSize(Number(v))}
         >
-          <SelectTrigger className="w-[90px]">
+          <SelectTrigger className="w-[90px]" aria-label="Rows per page">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -72,7 +72,7 @@ export function AlertsPagination({
           Prev
         </Button>
 
-        <div className="min-w-[120px] text-center">
+        <div className="min-w-[120px] text-center" aria-label="Page indicator">
           Page <span className="font-medium text-foreground">{page}</span> of{" "}
           <span className="font-medium text-foreground">{totalPages}</span>
         </div>

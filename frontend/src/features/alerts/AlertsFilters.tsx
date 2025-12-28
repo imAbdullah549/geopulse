@@ -37,11 +37,10 @@ export function AlertsFilters({
       />
 
       <Select
-        aria-label="Filter by severity"
         value={severity}
         onValueChange={(v) => setSeverity(v as Severity | "all")}
       >
-        <SelectTrigger>
+        <SelectTrigger aria-label="Filter by severity">
           <SelectValue placeholder="Severity" />
         </SelectTrigger>
         <SelectContent>
@@ -53,11 +52,10 @@ export function AlertsFilters({
       </Select>
 
       <Select
-        aria-label="Filter by status"
         value={status}
         onValueChange={(v) => setStatus(v as AlertStatus | "all")}
       >
-        <SelectTrigger>
+        <SelectTrigger aria-label="Filter by status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
