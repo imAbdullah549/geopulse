@@ -16,8 +16,7 @@ import {
 import { useGetAlertsQuery } from "./alertsApi";
 import type { Severity } from "@/shared/types/device";
 import type { AlertStatus } from "@/shared/types/alert";
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import type { SerializedError } from "@reduxjs/toolkit";
+import useApiError from "@/lib/hooks/useApiError";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { SeverityBadge, StatusBadge } from "./Badges";
@@ -97,41 +96,22 @@ export function AlertsPage() {
     setTotal(data?.count ?? 0);
   }, [data?.count, setTotal]);
 
-  const isFetchError = (e: unknown): e is FetchBaseQueryError =>
-    typeof e === "object" && e !== null && "status" in e;
+  const errorMessage = useApiError(error);
 
-  const getErrorMessage = (err: unknown): string => {
-    if (!err) return "Unknown error";
-    if (typeof err === "string") return err;
-
-    // RTK Query "fetch" error
-    if (isFetchError(err)) {
-      // error can be { status, data } or { error: string }
-      if ("error" in err && typeof (err as any).error === "string")
-        return (err as any).error;
-
-      const data = (err as FetchBaseQueryError).data;
-      if (data) {
-        if (typeof data === "string") return data;
-        if (typeof (data as any).message === "string")
-          return (data as any).message;
-        if (typeof (data as any).error === "string") return (data as any).error;
+  // Report API errors (lightweight telemetry hook) so we can observe failures in prod
+  useEffect(() => {
+    if (isError) {
+      try {
+        // lazy import to avoid bundling telem in some environments, but static import is fine too
+        // keep minimal context to avoid PII
+        import("@/lib/telemetry").then((mod) =>
+          mod.captureException(error, { queryArgs })
+        );
+      } catch (e) {
+        // swallow telemetry failures
       }
     }
-
-    // Serialized errors or plain Error-like objects
-    if (typeof err === "object" && err !== null && "message" in (err as any)) {
-      const msg = (err as any).message;
-      if (typeof msg === "string") return msg;
-    }
-
-    const serializedMessage = (err as SerializedError).message;
-    if (typeof serializedMessage === "string") return serializedMessage;
-
-    return "Unknown error";
-  };
-
-  const errorMessage = getErrorMessage(error);
+  }, [isError, error, queryArgs]);
 
   const total = data?.count ?? 0;
 

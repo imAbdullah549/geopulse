@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/testUtils";
 import { AlertsPage } from "./AlertsPage";
 import { within } from "@testing-library/react";
@@ -150,10 +150,17 @@ test("shows error state when api fails", async () => {
     http.get("*/api/alerts", () => HttpResponse.json({}, { status: 500 }))
   );
 
+  // Spy on telemetry before rendering so we catch the dynamic import call
+  const telemetry = await import("@/lib/telemetry");
+  const spy = vi.spyOn(telemetry, "captureException");
+
   renderWithProviders(<AlertsPage />);
 
   expect(await screen.findByText(/failed to load/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+
+  // Telemetry should be reported for the fetch error
+  await waitFor(() => expect(spy).toHaveBeenCalled());
 });
 
 test("displays backend error 'message' field when provided", async () => {
