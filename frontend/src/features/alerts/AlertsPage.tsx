@@ -1,8 +1,9 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { captureException, captureMetric } from "@/lib/telemetry";
 
 import {
   Table,
@@ -102,16 +103,36 @@ export function AlertsPage() {
   useEffect(() => {
     if (isError) {
       try {
-        // lazy import to avoid bundling telem in some environments, but static import is fine too
-        // keep minimal context to avoid PII
-        import("@/lib/telemetry").then((mod) =>
-          mod.captureException(error, { queryArgs })
-        );
+        captureException(error, { queryArgs });
       } catch (e) {
         // swallow telemetry failures
       }
     }
   }, [isError, error, queryArgs]);
+
+  // Measure time to first table render for performance monitoring
+  const pageLoadStartRef = useRef<number | null>(null);
+  const ttfReportedRef = useRef(false);
+
+  useEffect(() => {
+    // start timer on first mount
+    if (pageLoadStartRef.current === null)
+      pageLoadStartRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    // when table is visible, capture time-to-first-table once
+    const hasTable = !isLoading && !isError && !!data;
+    if (hasTable && !ttfReportedRef.current && pageLoadStartRef.current) {
+      const duration = Date.now() - pageLoadStartRef.current;
+      ttfReportedRef.current = true;
+      try {
+        captureMetric("time_to_first_table", duration, { queryArgs });
+      } catch (e) {
+        // ignore telemetry errors
+      }
+    }
+  }, [isLoading, pageLoadStartRef]);
 
   const total = data?.count ?? 0;
 
