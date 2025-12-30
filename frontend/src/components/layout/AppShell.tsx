@@ -1,10 +1,12 @@
 import { NavLink } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/shared/routes";
 
 const navItems = [
-  { to: "/alerts", label: "Alerts" },
-  { to: "/map", label: "Map" },
+  { to: ROUTES.ALERTS, label: "Alerts" },
+  { to: ROUTES.MAP, label: "Map" },
+  { to: ROUTES.DEVICES, label: "Devices" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
