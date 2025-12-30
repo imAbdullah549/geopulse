@@ -137,20 +137,29 @@ export function AlertsPage() {
   const total = data?.count ?? 0;
 
   return (
-    <div className="h-full p-4">
-      <Card className="h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <div className="h-full p-4 space-y-4 flex flex-col">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl/7 font-bold text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
             Alerts
-            {isFetching && (
-              <span
-                className="text-sm text-muted-foreground"
-                aria-live="polite"
-              >
-                Updating…
-              </span>
-            )}
-          </CardTitle>
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Alerts overview
+            {isFetching ? " • Updating…" : null}
+          </p>
+        </div>
+      </div>
+      <Card className="flex-1 flex-col min-h-0">
+        <CardHeader className="flex flex-row items-center justify-between">
+          {/* Filters */}
+          <AlertsFilters
+            search={search}
+            setSearch={setSearch}
+            severity={severity}
+            setSeverity={setSeverity}
+            status={status}
+            setStatus={setStatus}
+          />
           <Button
             aria-label="Refresh alerts"
             variant="outline"
@@ -164,16 +173,6 @@ export function AlertsPage() {
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 flex flex-col space-y-4 overflow-hidden">
-          {/* Filters */}
-          <AlertsFilters
-            search={search}
-            setSearch={setSearch}
-            severity={severity}
-            setSeverity={setSeverity}
-            status={status}
-            setStatus={setStatus}
-          />
-
           {/* Content */}
           {isLoading ? (
             <div className="space-y-2">
