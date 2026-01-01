@@ -4,13 +4,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ROUTES } from "@/shared/routes";
 
 const AlertsPage = lazy(() =>
-  import("@/features/alerts/AlertsPage").then((m) => ({
+  import("@/features/alerts/pages/AlertsPage").then((m) => ({
     default: m.AlertsPage,
   }))
 );
 
 const DevicesPage = lazy(() =>
-  import("@/features/devices/DevicesPage").then((m) => ({
+  import("@/features/devices/pages/DevicesPage").then((m) => ({
     default: m.DevicesPage,
   }))
 );

@@ -1,10 +1,10 @@
 import { screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test/testUtils";
-import { AlertsPage } from "./AlertsPage";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mswServer";
+import { AlertsPage } from "../pages/AlertsPage";
 
 test("renders alerts rows", async () => {
   renderWithProviders(<AlertsPage />);
@@ -32,7 +32,11 @@ test("renders first page of alerts (20 rows)", async () => {
   // Metrics should be reported: api fetch and time to first table
   await waitFor(() => expect(metricSpy).toHaveBeenCalled());
   expect(metricSpy).toHaveBeenCalledWith("api_fetch", expect.anything());
-  expect(metricSpy).toHaveBeenCalledWith("time_to_first_table", expect.any(Number), expect.anything());
+  expect(metricSpy).toHaveBeenCalledWith(
+    "alerts_time_to_first_table",
+    expect.any(Number),
+    expect.anything()
+  );
 });
 
 test("next page loads page 2", async () => {

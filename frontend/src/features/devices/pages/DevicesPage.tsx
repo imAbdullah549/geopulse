@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
-import DevicesFilters from "./DevicesFilters";
-
+import { useEffect, useState } from "react";
+import DevicesFilters from "../components/DevicesFilters";
 import {
   Table,
   TableBody,
@@ -9,51 +8,80 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import AlertsPagination from "@/features/alerts/AlertsPagination"; // reuse your existing pagination component
-import type { DeviceStatus, Severity } from "@/shared/types/device";
-import { useGetDevicesQuery } from "./devicesApi";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { StatusBadge } from "./StatusBadge";
-import { SeverityBadge } from "./SeverityBadge";
+import { formatDateTime } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import useApiError from "@/lib/hooks/useApiError";
+import { useGetDevicesQuery } from "../api/devicesApi";
+import { PaginationBar } from "@/components/pagination";
+import { StatusBadge } from "../components/StatusBadge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { usePagination } from "@/lib/hooks/usePagination";
+import { PageShell, PageHeader } from "@/components/page";
+import { SeverityBadge } from "../components/SeverityBadge";
+import type { DeviceStatus, Severity } from "@/shared/types/device";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
+import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
 
 export function DevicesPage() {
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 400);
   const [status, setStatus] = useState<DeviceStatus | "all">("all");
   const [severity, setSeverity] = useState<Severity | "all">("all");
+
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const pageSizeDefault = 20;
+  const [pageSize, setPageSize] = useState(pageSizeDefault);
 
-  const queryArgs = useMemo(
-    () => ({ search, status, severity, page, pageSize }),
-    [search, status, severity, page, pageSize]
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, pageSize]);
 
-  const { data, isLoading, isError, refetch, isFetching } =
+  const queryArgs = {
+    search: debouncedSearch,
+    status,
+    severity,
+    page,
+    pageSize,
+  };
+  const { data, isLoading, isError, isFetching, error, refetch } =
     useGetDevicesQuery(queryArgs);
 
   const total = data?.count ?? 0;
   const showing = data?.results.length ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const pagination = usePagination({
+    total,
+    initialPage: page,
+    initialPageSize: pageSize,
+  });
+
+  const effectivePage = pagination.page;
+  const errorMessage = useApiError(error);
+
+  // telemetry hooks
+  useQueryErrorTelemetry({ isError, error, meta: { queryArgs } });
+
+  const ready = !isLoading && !isError && !!data;
+  useTimeToFirstContent({
+    ready,
+    metricName: "alerts_time_to_first_table",
+    meta: { queryArgs },
+  });
 
   return (
-    <div className="h-full p-4 space-y-4 flex flex-col">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl/7 font-bold text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Devices
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Inventory & health overview
-            {isFetching ? " • Updating…" : null}
-          </p>
-        </div>
-      </div>
+    <PageShell
+      header={
+        <PageHeader
+          title="Devices"
+          subtitle="Inventory & health overview"
+          isUpdating={isFetching}
+        />
+      }
+    >
       <Card className="flex-1 flex-col min-h-0">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <DevicesFilters
             search={search}
             setSearch={(v) => {
@@ -71,21 +99,24 @@ export function DevicesPage() {
               setPage(1);
             }}
           />
+
           <Button
-            aria-label="Refresh alerts"
+            aria-label="Refresh devices"
             variant="outline"
+            disabled={isFetching}
             onClick={() => {
-              toast("Refetching alerts…");
+              toast("Refetching devices…");
               refetch();
             }}
           >
             Refresh
           </Button>
         </CardHeader>
+
         <CardContent className="flex-1 min-h-0 flex flex-col space-y-4 overflow-hidden">
           <div
             className={`flex-1 rounded-md border bg-background overflow-hidden ${
-              isFetching ? "opacity-60 pointer-events-none" : ""
+              isFetching ? "opacity-60" : ""
             }`}
           >
             <ScrollArea className="h-full">
@@ -116,7 +147,7 @@ export function DevicesPage() {
                         colSpan={5}
                         className="py-10 text-center text-muted-foreground"
                       >
-                        Failed to load devices.
+                        {errorMessage}
                       </TableCell>
                     </TableRow>
                   ) : data?.results.length ? (
@@ -131,7 +162,7 @@ export function DevicesPage() {
                           <SeverityBadge severity={d.severity} />
                         </TableCell>
                         <TableCell className="text-right">
-                          {new Date(d.lastSeenAt).toLocaleString()}
+                          {formatDateTime(d.lastSeenAt)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -150,22 +181,26 @@ export function DevicesPage() {
             </ScrollArea>
           </div>
 
-          <AlertsPagination
+          <PaginationBar
             total={total}
             showing={showing}
-            page={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            setPage={setPage}
+            page={effectivePage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            setPage={(p) => {
+              setPage(p);
+              pagination.setPage(p);
+            }}
             setPageSize={(n) => {
               setPageSize(n);
+              pagination.setPageSize(n);
               setPage(1);
             }}
-            canPrev={page > 1}
-            canNext={page < totalPages}
+            canPrev={pagination.canPrev}
+            canNext={pagination.canNext}
           />
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }
