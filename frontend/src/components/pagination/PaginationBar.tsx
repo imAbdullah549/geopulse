@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type AlertsPaginationProps = {
+export type PaginationBarProps = {
   total: number;
   showing: number;
   page: number;
@@ -21,7 +21,7 @@ export type AlertsPaginationProps = {
   className?: string;
 };
 
-export function AlertsPagination({
+export function PaginationBar({
   total,
   showing,
   page,
@@ -32,7 +32,7 @@ export function AlertsPagination({
   canPrev,
   canNext,
   className,
-}: AlertsPaginationProps) {
+}: PaginationBarProps) {
   return (
     <div
       className={`shrink-0 flex flex-col gap-2 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between ${
@@ -91,4 +91,4 @@ export function AlertsPagination({
   );
 }
 
-export default memo(AlertsPagination);
+export default memo(PaginationBar);

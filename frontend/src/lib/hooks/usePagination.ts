@@ -1,42 +1,38 @@
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 
-export function usePagination(initialPage = 1, initialPageSize = 20) {
-  const [page, setPage] = useState<number>(initialPage);
-  const [pageSize, setPageSize] = useState<number>(initialPageSize);
-  const [total, setTotal] = useState<number>(0);
+type UsePaginationOptions = {
+  initialPage?: number;
+  initialPageSize?: number;
+  total: number;
+};
 
-  // Reset to page 1 when pageSize changes
-  useEffect(() => {
-    setPage(1);
-  }, [pageSize]);
+export function usePagination({
+  total,
+  initialPage = 1,
+  initialPageSize = 20,
+}: UsePaginationOptions) {
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(total / pageSize)),
     [total, pageSize]
   );
-
-  // Clamp page when totalPages decreases
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
+  // safety: if total shrinks and current page becomes invalid, clamp
+  const safePage = Math.min(page, totalPages);
+
+  // expose safePage as `page` so UI never shows invalid page
+  // and allow setting page normally
   return {
-    // state
-    page,
+    page: safePage,
     setPage,
     pageSize,
     setPageSize,
-
-    // derived
     totalPages,
     canPrev,
     canNext,
-
-    // method for caller to inform total count
-    setTotal,
-    total,
-  } as const;
+  };
 }

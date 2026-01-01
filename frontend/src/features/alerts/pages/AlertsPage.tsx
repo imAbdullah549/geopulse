@@ -1,10 +1,3 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { captureException, captureMetric } from "@/lib/telemetry";
-
 import {
   Table,
   TableBody,
@@ -13,18 +6,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { useGetAlertsQuery } from "./alertsApi";
+import { toast } from "sonner";
+import { formatDateTime } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import useApiError from "@/lib/hooks/useApiError";
+import { memo, useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetAlertsQuery } from "../api/alertsApi";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import type { Severity } from "@/shared/types/device";
 import type { AlertStatus } from "@/shared/types/alert";
-import useApiError from "@/lib/hooks/useApiError";
+import { PaginationBar } from "@/components/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-import { SeverityBadge, StatusBadge } from "./Badges";
-import { AlertsFilters } from "./AlertsFilters";
-import { AlertsPagination } from "./AlertsPagination";
-import { useDebounce } from "@/lib/hooks/useDebounce";
 import { usePagination } from "@/lib/hooks/usePagination";
+import { PageShell, PageHeader } from "@/components/page";
+import { AlertsFilters } from "../components/AlertsFilters";
+import { SeverityBadge, StatusBadge } from "../components/Badges";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
+import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
 
 type AlertRowProps = {
   title: string;
@@ -52,7 +52,7 @@ const AlertRow = memo(function AlertRow({
         <StatusBadge value={status} />
       </TableCell>
       <TableCell className="text-muted-foreground">
-        {new Date(createdAt).toLocaleString()}
+        {formatDateTime(createdAt)}
       </TableCell>
     </TableRow>
   );
@@ -63,106 +63,76 @@ export function AlertsPage() {
   const debouncedSearch = useDebounce(search, 400);
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [status, setStatus] = useState<AlertStatus | "all">("all");
-  const {
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    totalPages,
-    canPrev,
-    canNext,
-    setTotal,
-  } = usePagination(1, 20);
 
-  const queryArgs = useMemo(
-    () => ({
-      search: debouncedSearch.trim() || undefined,
-      severity: severity === "all" ? undefined : severity,
-      status: status === "all" ? undefined : status,
-      page,
-      pageSize,
-    }),
-    [debouncedSearch, severity, status, page, pageSize]
-  );
+  const [page, setPage] = useState(1);
+  const pageSizeDefault = 20;
+  const [pageSize, setPageSize] = useState(pageSizeDefault);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, severity, status, pageSize, setPage]);
+  }, [debouncedSearch, pageSize]);
 
+  const queryArgs = {
+    search: debouncedSearch,
+    severity,
+    status,
+    page,
+    pageSize,
+  };
   const { data, isLoading, isError, isFetching, refetch, error } =
     useGetAlertsQuery(queryArgs);
 
-  // keep hook informed of latest total count from response
-  useEffect(() => {
-    setTotal(data?.count ?? 0);
-  }, [data?.count, setTotal]);
-
+  const total = data?.count ?? 0;
+  const showing = data?.results.length ?? 0;
+  const pagination = usePagination({
+    total,
+    initialPage: page,
+    initialPageSize: pageSize,
+  });
+  const effectivePage = pagination.page;
   const errorMessage = useApiError(error);
 
-  // Report API errors (lightweight telemetry hook) so we can observe failures in prod
-  useEffect(() => {
-    if (isError) {
-      try {
-        captureException(error, { queryArgs });
-      } catch (e) {
-        // swallow telemetry failures
-      }
-    }
-  }, [isError, error, queryArgs]);
+  // telemetry hooks
+  useQueryErrorTelemetry({ isError, error, meta: { queryArgs } });
 
-  // Measure time to first table render for performance monitoring
-  const pageLoadStartRef = useRef<number | null>(null);
-  const ttfReportedRef = useRef(false);
-
-  useEffect(() => {
-    // start timer on first mount
-    if (pageLoadStartRef.current === null)
-      pageLoadStartRef.current = Date.now();
-  }, []);
-
-  useEffect(() => {
-    // when table is visible, capture time-to-first-table once
-    const hasTable = !isLoading && !isError && !!data;
-    if (hasTable && !ttfReportedRef.current && pageLoadStartRef.current) {
-      const duration = Date.now() - pageLoadStartRef.current;
-      ttfReportedRef.current = true;
-      try {
-        captureMetric("time_to_first_table", duration, { queryArgs });
-      } catch (e) {
-        // ignore telemetry errors
-      }
-    }
-  }, [isLoading, pageLoadStartRef]);
-
-  const total = data?.count ?? 0;
+  const ready = !isLoading && !isError && !!data;
+  useTimeToFirstContent({
+    ready,
+    metricName: "alerts_time_to_first_table",
+    meta: { queryArgs },
+  });
 
   return (
-    <div className="h-full p-4 space-y-4 flex flex-col">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl/7 font-bold text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Alerts
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Alerts overview
-            {isFetching ? " • Updating…" : null}
-          </p>
-        </div>
-      </div>
+    <PageShell
+      header={
+        <PageHeader
+          title="Alerts"
+          subtitle="Alerts overview"
+          isUpdating={isFetching}
+        />
+      }
+    >
       <Card className="flex-1 flex-col min-h-0">
-        <CardHeader className="flex flex-row items-center justify-between">
-          {/* Filters */}
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <AlertsFilters
             search={search}
             setSearch={setSearch}
             severity={severity}
-            setSeverity={setSeverity}
+            setSeverity={(v) => {
+              setSeverity(v);
+              setPage(1);
+            }}
             status={status}
-            setStatus={setStatus}
+            setStatus={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
           />
+
           <Button
             aria-label="Refresh alerts"
             variant="outline"
+            disabled={isFetching}
             onClick={() => {
               toast("Refetching alerts…");
               refetch();
@@ -173,7 +143,6 @@ export function AlertsPage() {
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 flex flex-col space-y-4 overflow-hidden">
-          {/* Content */}
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-full" />
@@ -197,7 +166,7 @@ export function AlertsPage() {
           ) : (
             <div
               className={`flex-1 rounded-md border bg-background overflow-hidden ${
-                isFetching ? "opacity-60 pointer-events-none" : ""
+                isFetching ? "opacity-60" : ""
               }`}
             >
               <ScrollArea className="h-full">
@@ -238,19 +207,27 @@ export function AlertsPage() {
               </ScrollArea>
             </div>
           )}
-          <AlertsPagination
+
+          <PaginationBar
             total={total}
-            showing={data?.results.length ?? 0}
-            page={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            setPage={setPage}
-            setPageSize={setPageSize}
-            canPrev={canPrev}
-            canNext={canNext}
+            showing={showing}
+            page={effectivePage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            setPage={(p) => {
+              setPage(p);
+              pagination.setPage(p);
+            }}
+            setPageSize={(n) => {
+              setPageSize(n);
+              pagination.setPageSize(n);
+              setPage(1);
+            }}
+            canPrev={pagination.canPrev}
+            canNext={pagination.canNext}
           />
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }
