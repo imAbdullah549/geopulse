@@ -47,7 +47,6 @@ export function MapPage() {
           <h1 className="text-xl font-semibold">Map</h1>
 
           <div className="flex flex-wrap items-center gap-3">
-            <MapLegend />
             {isFetching ? (
               <span className="text-xs text-muted-foreground">Loading…</span>
             ) : null}
@@ -72,8 +71,15 @@ export function MapPage() {
         <FilterDrawer value={filters} onChange={setFilters} />
       </div>
 
-      <div className="min-h-[520px] flex-1">
+      <div className="min-h-[520px] flex-1 relative">
         <MapView points={points} onSelect={onSelect} />
+
+        {/* Overlay controls */}
+        <div className="absolute left-4 bottom-4 z-10 pointer-events-none">
+          <div className="pointer-events-auto">
+            <MapLegend />
+          </div>
+        </div>
       </div>
 
       <DetailsDrawer
