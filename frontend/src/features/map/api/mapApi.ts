@@ -14,7 +14,7 @@ export const mapApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getMapPoints: build.query<MapPointDto[], MapPointsParams>({
       query: (params) => ({
-        url: "/api/map/points",
+        url: "map/points",
         params: serializeParams(params),
       }),
       providesTags: (result) =>
