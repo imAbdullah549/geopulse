@@ -1,8 +1,6 @@
-// src/components/badges/badges.tsx
 import { Tag } from "@/components/badges/Tag";
 import { tagStyles } from "@/components/badges/tagStyles";
 import { labelize } from "@/lib/utils";
-
 import type { Severity, DeviceStatus } from "@/shared/types/device";
 import type { AlertStatus } from "@/shared/types/alert";
 
