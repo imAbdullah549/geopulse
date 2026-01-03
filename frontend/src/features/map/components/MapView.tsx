@@ -5,7 +5,7 @@ import type { MapPointDto } from "@/shared/types/map";
 
 function markerClass(severity: MapPointDto["severity"]) {
   if (severity === "high") return "bg-destructive ring-destructive/30";
-  if (severity === "medium") return "bg-secondary ring-muted/40";
+  if (severity === "medium") return "bg-foreground/70 ring-foreground/10";
   return "bg-background ring-muted/50 border";
 }
 
@@ -17,7 +17,7 @@ export function MapView({
   onSelect: (p: MapPointDto) => void;
 }) {
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border">
+    <div className="h-full w-full overflow-hidden">
       <Map
         initialViewState={{ latitude: 60.1699, longitude: 24.9384, zoom: 10 }} // Helsinki default
         style={{ width: "100%", height: "100%" }}

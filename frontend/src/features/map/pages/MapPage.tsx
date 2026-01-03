@@ -1,4 +1,6 @@
 import * as React from "react";
+import { RefreshCcw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 import type { MapPointDto } from "@/shared/types/map";
@@ -28,8 +30,9 @@ export function MapPage() {
   );
 
   const { data, isFetching, isError, refetch } = useGetMapPointsQuery(params);
-
+  console.log("Map points data:", data);
   const points = data ?? [];
+
   const tags = React.useMemo(
     () => buildFilterTags(filters, setFilters),
     [filters]
@@ -41,47 +44,51 @@ export function MapPage() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold">Map</h1>
+    <div className="h-full relative">
+      {/* MAP */}
+      <MapView points={points} onSelect={onSelect} />
 
-          <div className="flex flex-wrap items-center gap-3">
-            {isFetching ? (
-              <span className="text-xs text-muted-foreground">Loading…</span>
-            ) : null}
-            {isError ? (
-              <span className="text-xs text-destructive">
-                Failed to load points
-              </span>
-            ) : null}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => refetch()}
-            >
-              Refresh
-            </Button>
-          </div>
+      {/* TOP-RIGHT CONTROLS */}
+      <div className="absolute right-4 top-4 z-10 flex flex-col gap-2 pointer-events-none">
+        <div className="pointer-events-auto flex gap-2">
+          <FilterDrawer value={filters} onChange={setFilters} />
 
-          <ActiveFilterTags tags={tags} />
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={() => refetch()}
+            aria-label="Refresh map"
+          >
+            <RefreshCcw
+              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            />
+          </Button>
         </div>
 
-        <FilterDrawer value={filters} onChange={setFilters} />
+        {isError ? (
+          <div className="pointer-events-auto text-xs text-destructive bg-background/90 px-2 py-1 rounded-md">
+            Failed to load points
+          </div>
+        ) : null}
       </div>
 
-      <div className="min-h-[520px] flex-1 relative">
-        <MapView points={points} onSelect={onSelect} />
-
-        {/* Overlay controls */}
-        <div className="absolute left-4 bottom-4 z-10 pointer-events-none">
+      {/* TOP-LEFT ACTIVE FILTER TAGS */}
+      {tags.length > 0 ? (
+        <div className="absolute left-4 top-4 z-10 pointer-events-none">
           <div className="pointer-events-auto">
-            <MapLegend />
+            <ActiveFilterTags tags={tags} />
           </div>
+        </div>
+      ) : null}
+
+      {/* BOTTOM-LEFT LEGEND */}
+      <div className="absolute left-4 bottom-4 z-10 pointer-events-none">
+        <div className="pointer-events-auto">
+          <MapLegend />
         </div>
       </div>
 
+      {/* DETAILS DRAWER */}
       <DetailsDrawer
         point={selected}
         open={detailsOpen}
