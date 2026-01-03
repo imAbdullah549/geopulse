@@ -28,3 +28,8 @@ export function formatDateTime(
 
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
+
+export function labelize(v: string) {
+  if (!v) return "—";
+  return v.charAt(0).toUpperCase() + v.slice(1);
+}

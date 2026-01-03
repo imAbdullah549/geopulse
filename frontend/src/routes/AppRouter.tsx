@@ -16,7 +16,7 @@ const DevicesPage = lazy(() =>
 );
 
 const MapPage = lazy(() =>
-  import("@/features/map/MapPage").then((m) => ({ default: m.MapPage }))
+  import("@/features/map/pages/MapPage").then((m) => ({ default: m.MapPage }))
 );
 
 function NotFound() {

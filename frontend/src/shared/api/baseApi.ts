@@ -65,6 +65,6 @@ const timedBaseQuery = async (args: any, api: any, extraOptions: any) => {
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: timedBaseQuery,
-  tagTypes: ["Device", "Alert"],
+  tagTypes: ["Device", "Alert", "MapPoints"],
   endpoints: () => ({}),
 });
