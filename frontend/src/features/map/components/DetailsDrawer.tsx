@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Copy, MapPin, Clock, Cpu } from "lucide-react";
 
 import {
@@ -7,26 +6,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import type { MapPointDto } from "@/shared/types/map";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEffect, useState, type ReactNode } from "react";
+import { AlertStatusBadge, SeverityBadge } from "@/components/badges/Badges";
 
 /** ------- small utilities ------- **/
-function formatTimestamp(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString();
-}
 
 function formatCoords(lat: number, lng: number) {
   return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
-async function copyToClipboard(text: string, label = "Copied") {
+async function copyToClipboard(text: string, label = "Copied to clipboard") {
   try {
     await navigator.clipboard.writeText(text);
     toast.success(label);
@@ -41,8 +36,8 @@ function Section({
   children,
 }: {
   title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  icon?: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="space-y-2">
@@ -58,10 +53,12 @@ function Section({
 function ValueRow({
   value,
   copyValue,
+  copyLabel = "Copied to clipboard",
   className,
 }: {
-  value: React.ReactNode;
+  value: ReactNode;
   copyValue?: string;
+  copyLabel?: string;
   className?: string;
 }) {
   return (
@@ -76,39 +73,15 @@ function ValueRow({
         <Button
           type="button"
           variant="ghost"
-          size="icon"
+          size="sm"
           className="shrink-0"
           aria-label="Copy"
-          onClick={() => copyToClipboard(copyValue)}
+          onClick={() => copyToClipboard(copyValue, copyLabel)}
         >
           <Copy className="h-4 w-4" />
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: MapPointDto["severity"] }) {
-  const variant =
-    severity === "high"
-      ? "destructive"
-      : severity === "medium"
-      ? "secondary"
-      : "outline";
-
-  return (
-    <Badge variant={variant} className="capitalize">
-      {severity}
-    </Badge>
-  );
-}
-
-function StatusBadge({ status }: { status: MapPointDto["status"] }) {
-  const variant = status === "open" ? "default" : "secondary";
-  return (
-    <Badge variant={variant} className="capitalize">
-      {status}
-    </Badge>
   );
 }
 
@@ -122,9 +95,9 @@ export function DetailsDrawer({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [isDesktop, setIsDesktop] = React.useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const mql = window.matchMedia("(min-width: 768px)");
     const onChange = () => setIsDesktop(mql.matches);
     onChange();
@@ -156,8 +129,8 @@ export function DetailsDrawer({
 
               {point ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <SeverityBadge severity={point.severity} />
-                  <StatusBadge status={point.status} />
+                  <SeverityBadge value={point.severity} />
+                  <AlertStatusBadge value={point.status} />
                 </div>
               ) : (
                 <div className="mt-2 text-sm text-muted-foreground">
@@ -174,11 +147,18 @@ export function DetailsDrawer({
           {!point ? null : (
             <>
               <Section title="Timestamp" icon={<Clock className="h-4 w-4" />}>
-                <ValueRow value={formatTimestamp(point.timestamp)} />
+                <ValueRow
+                  value={formatDateTime(point.timestamp)}
+                  copyLabel="Timestamp copied"
+                />
               </Section>
 
               <Section title="Location" icon={<MapPin className="h-4 w-4" />}>
-                <ValueRow value={coords} copyValue={coords ?? undefined} />
+                <ValueRow
+                  value={coords}
+                  copyValue={coords ?? undefined}
+                  copyLabel="Coordinates copied"
+                />
                 {/* Optional: future action buttons row (navigate, zoom, etc.) */}
                 {/* <div className="mt-2 flex gap-2">
                   <Button variant="secondary" size="sm">Zoom to point</Button>
@@ -191,6 +171,7 @@ export function DetailsDrawer({
                   <ValueRow
                     value={deviceLabel}
                     copyValue={point.deviceId || undefined}
+                    copyLabel="Device ID copied"
                   />
                 </Section>
               ) : null}

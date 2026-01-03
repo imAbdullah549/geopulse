@@ -1,10 +1,4 @@
-// FilterDrawer.tsx
-// Right-side drawer using shadcn/ui Sheet (NOT Drawer).
-// Install: npx shadcn@latest add sheet button badge input switch toggle-group separator scroll-area
-
-import * as React from "react";
 import { SlidersHorizontal, X } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,12 +14,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MapFilters } from "../types";
-import { Label } from "@/components/ui/label";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-// ---- Types derived from your MapFilters (supports optional severities/year) ----
 type Severity = NonNullable<MapFilters["severities"]>[number];
 
-// Change these if your backend expects different values.
 const SEVERITY_OPTIONS = ["low", "medium", "high"] as const;
 const labelSeverity = (s: string) =>
   s === "low" ? "Low" : s === "medium" ? "Medium" : s === "high" ? "High" : s;
@@ -34,7 +26,6 @@ function asArray<T>(v: T[] | undefined): T[] {
   return v ?? [];
 }
 
-// year in your project is number | undefined (NOT null)
 function normalizeYearInput(input: string): {
   value: number | undefined;
   isValid: boolean;
@@ -68,44 +59,37 @@ export function FilterDrawer({
   value: MapFilters;
   onChange: (next: MapFilters) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
-  // Draft state: user edits here, Apply commits to parent
-  const [draft, setDraft] = React.useState<MapFilters>(value);
-  const [yearInput, setYearInput] = React.useState<string>(
+  const [draft, setDraft] = useState<MapFilters>(value);
+  const [yearInput, setYearInput] = useState<string>(
     value.year ? String(value.year) : ""
   );
-  const [yearValid, setYearValid] = React.useState(true);
+  const [yearValid, setYearValid] = useState(true);
 
-  const draftSeverities = React.useMemo(
+  const draftSeverities = useMemo(
     () => asArray(draft.severities),
     [draft.severities]
   );
-  const appliedCount = React.useMemo(() => countActive(value), [value]);
-  const draftCount = React.useMemo(() => countActive(draft), [draft]);
-  const hasChanges = React.useMemo(
-    () => !sameFilters(draft, value),
-    [draft, value]
-  );
+  const appliedCount = useMemo(() => countActive(value), [value]);
+  const draftCount = useMemo(() => countActive(draft), [draft]);
+  const hasChanges = useMemo(() => !sameFilters(draft, value), [draft, value]);
 
-  // When sheet opens, sync draft from applied value
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     setDraft(value);
     setYearInput(value.year ? String(value.year) : "");
     setYearValid(true);
   }, [open, value]);
 
-  const closeAsCancel = React.useCallback(() => {
-    // revert to applied and close
+  const closeAsCancel = useCallback(() => {
     setDraft(value);
     setYearInput(value.year ? String(value.year) : "");
     setYearValid(true);
     setOpen(false);
   }, [value]);
 
-  // Closing via overlay / ESC should behave like Cancel (best UX for draft forms)
-  const handleOpenChange = React.useCallback(
+  const handleOpenChange = useCallback(
     (next: boolean) => {
       if (next) setOpen(true);
       else closeAsCancel();
@@ -113,34 +97,33 @@ export function FilterDrawer({
     [closeAsCancel]
   );
 
-  const setSeverities = React.useCallback((severities: Severity[]) => {
+  const setSeverities = useCallback((severities: Severity[]) => {
     setDraft((prev) => ({
       ...prev,
-      // store undefined when empty to match your optional type & keep params clean
       severities: severities.length ? severities : undefined,
     }));
   }, []);
 
-  const onYearChange = React.useCallback((next: string) => {
+  const onYearChange = useCallback((next: string) => {
     setYearInput(next);
     const parsed = normalizeYearInput(next);
     setYearValid(parsed.isValid);
     setDraft((prev) => ({ ...prev, year: parsed.value }));
   }, []);
 
-  const clearYear = React.useCallback(() => {
+  const clearYear = useCallback(() => {
     setYearInput("");
     setYearValid(true);
     setDraft((prev) => ({ ...prev, year: undefined }));
   }, []);
 
-  const apply = React.useCallback(() => {
+  const apply = useCallback(() => {
     if (!yearValid) return;
     onChange(draft);
     setOpen(false);
   }, [draft, onChange, yearValid]);
 
-  const chips = React.useMemo(() => {
+  const chips = useMemo(() => {
     const items: Array<{ key: string; label: string }> = [];
     for (const s of draftSeverities) {
       items.push({
@@ -154,7 +137,7 @@ export function FilterDrawer({
     return items;
   }, [draftSeverities, draft.year, draft.onlyActive]);
 
-  const removeChip = React.useCallback(
+  const removeChip = useCallback(
     (key: string) => {
       if (key.startsWith("sev:")) {
         const sev = key.split(":")[1];

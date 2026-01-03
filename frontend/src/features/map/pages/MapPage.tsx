@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { RefreshCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,11 @@ import {
 } from "../components";
 
 export function MapPage() {
-  const [filters, setFilters] = React.useState<MapFilters>(DEFAULT_MAP_FILTERS);
-  const [selected, setSelected] = React.useState<MapPointDto | null>(null);
-  const [detailsOpen, setDetailsOpen] = React.useState(false);
+  const [filters, setFilters] = useState<MapFilters>(DEFAULT_MAP_FILTERS);
+  const [selected, setSelected] = useState<MapPointDto | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const params = React.useMemo(
+  const params = useMemo(
     () => ({
       severities: filters.severities,
       year: filters.year,
@@ -30,13 +30,10 @@ export function MapPage() {
   );
 
   const { data, isFetching, isError, refetch } = useGetMapPointsQuery(params);
-  console.log("Map points data:", data);
+
   const points = data ?? [];
 
-  const tags = React.useMemo(
-    () => buildFilterTags(filters, setFilters),
-    [filters]
-  );
+  const tags = useMemo(() => buildFilterTags(filters, setFilters), [filters]);
 
   const onSelect = (p: MapPointDto) => {
     setSelected(p);
@@ -54,7 +51,7 @@ export function MapPage() {
           <FilterDrawer value={filters} onChange={setFilters} />
 
           <Button
-            size="icon"
+            size="sm"
             variant="secondary"
             onClick={() => refetch()}
             aria-label="Refresh map"

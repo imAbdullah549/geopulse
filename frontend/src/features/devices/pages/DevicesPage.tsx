@@ -14,16 +14,15 @@ import { Button } from "@/components/ui/button";
 import useApiError from "@/lib/hooks/useApiError";
 import { useGetDevicesQuery } from "../api/devicesApi";
 import { PaginationBar } from "@/components/pagination";
-import { StatusBadge } from "../components/StatusBadge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePagination } from "@/lib/hooks/usePagination";
 import { PageShell, PageHeader } from "@/components/page";
-import { SeverityBadge } from "../components/SeverityBadge";
 import type { DeviceStatus, Severity } from "@/shared/types/device";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
 import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
+import { DeviceStatusBadge, SeverityBadge } from "@/components/badges/Badges";
 
 export function DevicesPage() {
   const [search, setSearch] = useState("");
@@ -156,10 +155,10 @@ export function DevicesPage() {
                         <TableCell className="font-medium">{d.id}</TableCell>
                         <TableCell>{d.name}</TableCell>
                         <TableCell>
-                          <StatusBadge status={d.status} />
+                          <DeviceStatusBadge value={d.status} />
                         </TableCell>
                         <TableCell>
-                          <SeverityBadge severity={d.severity} />
+                          <SeverityBadge value={d.severity} />
                         </TableCell>
                         <TableCell className="text-right">
                           {formatDateTime(d.lastSeenAt)}

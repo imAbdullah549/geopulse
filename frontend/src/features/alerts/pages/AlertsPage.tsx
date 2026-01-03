@@ -21,10 +21,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePagination } from "@/lib/hooks/usePagination";
 import { PageShell, PageHeader } from "@/components/page";
 import { AlertsFilters } from "../components/AlertsFilters";
-import { SeverityBadge, StatusBadge } from "../components/Badges";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
 import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
+import { AlertStatusBadge, SeverityBadge } from "@/components/badges/Badges";
 
 type AlertRowProps = {
   title: string;
@@ -49,7 +49,7 @@ const AlertRow = memo(function AlertRow({
         <SeverityBadge value={severity} />
       </TableCell>
       <TableCell>
-        <StatusBadge value={status} />
+        <AlertStatusBadge value={status} />
       </TableCell>
       <TableCell className="text-muted-foreground">
         {formatDateTime(createdAt)}
