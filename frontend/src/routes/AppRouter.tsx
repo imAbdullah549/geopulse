@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { ROUTES } from "@/shared/routes";
+import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
 
 const AlertsPage = lazy(() =>
   import("@/features/alerts/pages/AlertsPage").then((m) => ({
@@ -33,23 +34,51 @@ function NotFound() {
 function PageFallback() {
   return <div className="p-6 text-muted-foreground">Loading…</div>;
 }
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
+}
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <AppShell>
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route
-              path={ROUTES.ROOT}
-              element={<Navigate to={ROUTES.ALERTS} replace />}
-            />
-            <Route path={ROUTES.ALERTS} element={<AlertsPage />} />
-            <Route path={ROUTES.DEVICES} element={<DevicesPage />} />
-            <Route path={ROUTES.MAP} element={<MapPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route
+            path={ROUTES.ROOT}
+            element={<Navigate to={ROUTES.ALERTS} replace />}
+          />
+          <Route
+            path={ROUTES.ALERTS}
+            element={
+              <ErrorBoundary>
+                <Lazy>
+                  <AlertsPage />
+                </Lazy>
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path={ROUTES.DEVICES}
+            element={
+              <ErrorBoundary>
+                <Lazy>
+                  <DevicesPage />
+                </Lazy>
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path={ROUTES.MAP}
+            element={
+              <ErrorBoundary>
+                <Lazy>
+                  <MapPage />
+                </Lazy>
+              </ErrorBoundary>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </AppShell>
     </BrowserRouter>
   );

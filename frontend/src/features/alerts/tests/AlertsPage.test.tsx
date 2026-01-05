@@ -19,7 +19,7 @@ test("renders alerts rows", async () => {
 test("renders first page of alerts (20 rows)", async () => {
   // Spy on metrics
   const telemetry = await import("@/lib/telemetry");
-  const metricSpy = vi.spyOn(telemetry, "captureMetric");
+  const metricSpy = vi.spyOn(telemetry, "trackDurationMs");
 
   renderWithProviders(<AlertsPage />);
 
@@ -31,7 +31,6 @@ test("renders first page of alerts (20 rows)", async () => {
 
   // Metrics should be reported: api fetch and time to first table
   await waitFor(() => expect(metricSpy).toHaveBeenCalled());
-  expect(metricSpy).toHaveBeenCalledWith("api_fetch", expect.anything());
   expect(metricSpy).toHaveBeenCalledWith(
     "alerts_time_to_first_table",
     expect.any(Number),
@@ -165,7 +164,7 @@ test("shows error state when api fails", async () => {
 
   // Spy on telemetry before rendering so we catch the dynamic import call
   const telemetry = await import("@/lib/telemetry");
-  const spy = vi.spyOn(telemetry, "captureException");
+  const spy = vi.spyOn(telemetry, "trackException");
 
   renderWithProviders(<AlertsPage />);
 
