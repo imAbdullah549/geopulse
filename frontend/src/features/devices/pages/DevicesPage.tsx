@@ -9,10 +9,6 @@ import { usePagination } from "@/lib/hooks/usePagination";
 import { PageShell, PageHeader } from "@/components/page";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
-// import {
-//   DevicesFiltersBar,
-//   type DevicesFiltersValue,
-// } from "../components/DeviceFilterBar";
 import { DevicesTable } from "../components/DevicesTable";
 import { DevicesKpis } from "../components/DevicesKpis";
 import type { DevicesFiltersValue } from "../components/Filters/types";
