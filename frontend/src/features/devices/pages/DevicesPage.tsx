@@ -1,73 +1,61 @@
-import { useEffect, useState } from "react";
-import DevicesFilters from "../components/DevicesFilters";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { toast } from "sonner";
-import { formatDateTime } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
 import useApiError from "@/lib/hooks/useApiError";
-import { useGetDevicesQuery } from "../api/devicesApi";
+import {
+  useGetDevicesQuery,
+  useGetDevicesSummaryQuery,
+} from "../api/devicesApi";
 import { PaginationBar } from "@/components/pagination";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePagination } from "@/lib/hooks/usePagination";
 import { PageShell, PageHeader } from "@/components/page";
-import type { DeviceStatus, Severity } from "@/shared/types/device";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useDebounce } from "@/lib/hooks/useDebounce";
-import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
 import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
-import { DeviceStatusBadge, SeverityBadge } from "@/components/badges/Badges";
+import { DevicesTable } from "../components/DevicesTable";
+import { DevicesKpis } from "../components/DevicesKpis";
+import type { DevicesFiltersValue } from "../components/Filters/types";
+import { DevicesFiltersBar } from "../components/Filters/DevicesFiltersBar";
+
+const DEFAULT_FILTERS: DevicesFiltersValue = {
+  search: "",
+  orderBy: "lastPingAt",
+  order: "desc",
+};
 
 export function DevicesPage() {
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400);
-  const [status, setStatus] = useState<DeviceStatus | "all">("all");
-  const [severity, setSeverity] = useState<Severity | "all">("all");
-
+  const [filters, setFilters] = useState<DevicesFiltersValue>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-  const pageSizeDefault = 20;
-  const [pageSize, setPageSize] = useState(pageSizeDefault);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, pageSize]);
+  const queryArgs = useMemo(
+    () => ({
+      ...filters,
+      page,
+      pageSize,
+    }),
+    [filters, page, pageSize]
+  );
 
-  const queryArgs = {
-    search: debouncedSearch,
-    status,
-    severity,
-    page,
-    pageSize,
-  };
-  const { data, isLoading, isError, isFetching, error, refetch } =
+  const { data, isLoading, isError, isFetching, error } =
     useGetDevicesQuery(queryArgs);
+
+  const { data: summary } = useGetDevicesSummaryQuery({
+    staleMins: filters.staleMins ?? 60,
+  });
 
   const total = data?.count ?? 0;
   const showing = data?.results.length ?? 0;
-  const pagination = usePagination({
-    total,
-    initialPage: page,
-    initialPageSize: pageSize,
-  });
 
-  const effectivePage = pagination.page;
+  const pagination = usePagination({ total, page, pageSize });
+
   const errorMessage = useApiError(error);
-
-  // telemetry hooks
-  useQueryErrorTelemetry({ isError, error, meta: { queryArgs } });
 
   const ready = !isLoading && !isError && !!data;
   useTimeToFirstContent({
     ready,
-    metricName: "alerts_time_to_first_table",
-    meta: { queryArgs },
+    metricName: "devices_time_to_first_table",
+    meta: queryArgs,
   });
+
+  const staleThreshold = filters.staleMins ?? 60;
 
   return (
     <PageShell
@@ -76,123 +64,45 @@ export function DevicesPage() {
           title="Devices"
           subtitle="Inventory & health overview"
           isUpdating={isFetching}
+          kpis={<DevicesKpis summary={summary} />}
         />
       }
     >
       <Card className="flex-1 flex-col min-h-0">
-        <CardHeader className="flex flex-row items-center justify-between gap-3">
-          <DevicesFilters
-            search={search}
-            setSearch={(v) => {
-              setSearch(v);
+        <CardHeader className="space-y-3">
+          <DevicesFiltersBar
+            value={filters}
+            disabled={isFetching}
+            onApply={(next) => {
+              setFilters(next);
               setPage(1);
             }}
-            status={status}
-            setStatus={(v) => {
-              setStatus(v);
-              setPage(1);
-            }}
-            severity={severity}
-            setSeverity={(v) => {
-              setSeverity(v);
+            onReset={() => {
+              setFilters(DEFAULT_FILTERS);
               setPage(1);
             }}
           />
-
-          <Button
-            aria-label="Refresh devices"
-            variant="outline"
-            disabled={isFetching}
-            onClick={() => {
-              toast("Refetching devices…");
-              refetch();
-            }}
-          >
-            Refresh
-          </Button>
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 flex flex-col space-y-4 overflow-hidden">
-          <div
-            className={`flex-1 rounded-md border bg-background overflow-hidden ${
-              isFetching ? "opacity-60" : ""
-            }`}
-          >
-            <ScrollArea className="h-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead className="text-right">Last seen</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-10 text-center text-muted-foreground"
-                      >
-                        Loading…
-                      </TableCell>
-                    </TableRow>
-                  ) : isError ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-10 text-center text-muted-foreground"
-                      >
-                        {errorMessage}
-                      </TableCell>
-                    </TableRow>
-                  ) : data?.results.length ? (
-                    data.results.map((d) => (
-                      <TableRow key={d.id}>
-                        <TableCell className="font-medium">{d.id}</TableCell>
-                        <TableCell>{d.name}</TableCell>
-                        <TableCell>
-                          <DeviceStatusBadge value={d.status} />
-                        </TableCell>
-                        <TableCell>
-                          <SeverityBadge value={d.severity} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatDateTime(d.lastSeenAt)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        No devices found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
+          <DevicesTable
+            data={data}
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={errorMessage}
+            isFetching={isFetching}
+            staleThreshold={staleThreshold}
+          />
 
           <PaginationBar
             total={total}
             showing={showing}
-            page={effectivePage}
+            page={pagination.page}
             totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            setPage={(p) => {
-              setPage(p);
-              pagination.setPage(p);
-            }}
+            pageSize={pageSize}
+            setPage={setPage}
             setPageSize={(n) => {
               setPageSize(n);
-              pagination.setPageSize(n);
               setPage(1);
             }}
             canPrev={pagination.canPrev}

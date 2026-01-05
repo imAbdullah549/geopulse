@@ -23,7 +23,6 @@ import { PageShell, PageHeader } from "@/components/page";
 import { AlertsFilters } from "../components/AlertsFilters";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useTimeToFirstContent } from "@/lib/hooks/useTimeToFirstContent";
-import { useQueryErrorTelemetry } from "@/lib/hooks/useQueryErrorTelemetry";
 import { AlertStatusBadge, SeverityBadge } from "@/components/badges/Badges";
 
 type AlertRowProps = {
@@ -84,16 +83,10 @@ export function AlertsPage() {
 
   const total = data?.count ?? 0;
   const showing = data?.results.length ?? 0;
-  const pagination = usePagination({
-    total,
-    initialPage: page,
-    initialPageSize: pageSize,
-  });
+
+  const pagination = usePagination({ total, page, pageSize });
   const effectivePage = pagination.page;
   const errorMessage = useApiError(error);
-
-  // telemetry hooks
-  useQueryErrorTelemetry({ isError, error, meta: { queryArgs } });
 
   const ready = !isLoading && !isError && !!data;
   useTimeToFirstContent({
@@ -213,14 +206,10 @@ export function AlertsPage() {
             showing={showing}
             page={effectivePage}
             totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            setPage={(p) => {
-              setPage(p);
-              pagination.setPage(p);
-            }}
+            pageSize={pageSize}
+            setPage={setPage}
             setPageSize={(n) => {
               setPageSize(n);
-              pagination.setPageSize(n);
               setPage(1);
             }}
             canPrev={pagination.canPrev}

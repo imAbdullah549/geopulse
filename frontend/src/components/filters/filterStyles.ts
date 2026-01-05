@@ -9,7 +9,11 @@ export const rootClass = "flex flex-col gap-3 md:flex-row md:items-center";
 export const rowWrapClass =
   "flex w-full flex-wrap gap-3 md:w-auto md:flex-nowrap md:justify-end";
 
-export const inputClass = cn(controlBase, "w-full md:flex-1 md:min-w-[360px]");
+export const inputClass = cn(controlBase, "w-full md:flex-1 md:min-w-[260px]");
+export const inputClassSmall = cn(
+  controlBase,
+  "w-full md:flex-1 md:min-w-[120px]"
+);
 
 export const triggerClass = cn(
   controlBase,

@@ -5,6 +5,7 @@ type PageHeaderProps = {
   subtitle?: string;
   isUpdating?: boolean;
   actions?: ReactNode;
+  kpis?: ReactNode;
 };
 
 export function PageHeader({
@@ -12,22 +13,27 @@ export function PageHeader({
   subtitle,
   isUpdating,
   actions,
+  kpis,
 }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h2 className="text-2xl/7 font-bold text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
-          {title}
-        </h2>
-        {subtitle ? (
-          <p className="text-sm text-muted-foreground">
-            {subtitle}
-            {isUpdating ? " • Updating…" : null}
-          </p>
-        ) : null}
-      </div>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl/7 font-bold text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
+            {title}
+          </h2>
+          {subtitle ? (
+            <p className="text-sm text-muted-foreground">
+              {subtitle}
+              {isUpdating ? " • Updating…" : null}
+            </p>
+          ) : null}
+        </div>
 
-      {actions ? <div className="shrink-0">{actions}</div> : null}
+        {actions ? <div className="shrink-0">{actions}</div> : null}
+
+        {kpis ? <>{kpis}</> : null}
+      </div>
     </div>
   );
 }

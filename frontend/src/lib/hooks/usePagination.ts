@@ -1,38 +1,17 @@
-import { useMemo, useState } from "react";
-
 type UsePaginationOptions = {
-  initialPage?: number;
-  initialPageSize?: number;
   total: number;
+  page: number;
+  pageSize: number;
 };
 
-export function usePagination({
-  total,
-  initialPage = 1,
-  initialPageSize = 20,
-}: UsePaginationOptions) {
-  const [page, setPage] = useState(initialPage);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+export function usePagination({ total, page, pageSize }: UsePaginationOptions) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(total / pageSize)),
-    [total, pageSize]
-  );
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-
-  // safety: if total shrinks and current page becomes invalid, clamp
-  const safePage = Math.min(page, totalPages);
-
-  // expose safePage as `page` so UI never shows invalid page
-  // and allow setting page normally
   return {
     page: safePage,
-    setPage,
-    pageSize,
-    setPageSize,
     totalPages,
-    canPrev,
-    canNext,
+    canPrev: safePage > 1,
+    canNext: safePage < totalPages,
   };
 }
