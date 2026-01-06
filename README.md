@@ -36,7 +36,7 @@ This is how we go from “user saw an error” → “exact request in logs” q
 - **User interaction events** (safe, non-PII): filter apply/reset, pagination, sort changes.
 - **Component-level performance** (selectively): slow renders and expensive UI paths.
 
-See: `docs/observability.md`
+See: [`docs/observability.md`](docs/observability.md).
 
 ---
 
@@ -84,9 +84,9 @@ See: `docs/observability.md`
 
 ## Documentation
 
-- Frontend: `frontend/README.md`
-- Observability & telemetry: `docs/observability.md`
-- Contributing: `docs/contributing.md`
+- Frontend: [`frontend/README.md`](frontend/README.md). 
+- Observability & telemetry: [`docs/observability.md`](docs/observability.md). 
+- Contributing: [`docs/contributing.md`](docs/contributing.md). 
 - Backend (planned): `backend/README.md`
 
 ---
