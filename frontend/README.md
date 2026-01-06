@@ -1,73 +1,138 @@
-# React + TypeScript + Vite
+# GeoPulse Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript frontend for GeoPulse (Map, Alerts, Devices).
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Vite (build/dev server)
+- React + React Router
+- Redux Toolkit
+- Tailwind CSS + Radix UI (shadcn-style primitives)
+- MapLibre (map rendering)
+- Vitest + Testing Library (tests)
+- MSW (API mocking in development)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
 
-## Expanding the ESLint configuration
+### Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js (LTS recommended)
+- npm
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Install & run
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Build:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+Preview production build:
+
+```bash
+npm run preview
+```
+
+---
+
+## Environment variables
+
+Env files live in `frontend/` (Vite uses the `VITE_` prefix).
+
+### Development (`.env.development`)
+
+- `VITE_ENABLE_MSW=true` — enable MSW mock APIs in the browser
+- `VITE_TELEMETRY_ENABLED=true` — enable frontend telemetry hooks
+- `VITE_TELEMETRY_CONSOLE=true` — log telemetry events to console (dev-friendly)
+
+### Test (`.env.test`)
+
+- `VITE_API_BASE_URL=http://localhost/api`
+- `VITE_TELEMETRY_ENABLED=false`
+- `VITE_TELEMETRY_CONSOLE=false`
+
+Notes:
+
+- When `VITE_ENABLE_MSW=true`, the frontend does not require a backend.
+- When MSW is disabled, requests go to `VITE_API_BASE_URL` (or default `/api` if not set).
+
+---
+
+## Scripts
+
+```bash
+npm run dev           # start dev server
+npm run build         # build TypeScript + production build
+npm run lint          # lint
+npm run typecheck     # TypeScript check only
+npm run test          # vitest (watch)
+npm run test:ci       # vitest run
+npm run test:ui       # vitest UI
+npm run test:coverage # coverage report
+```
+
+---
+
+## API mocking (MSW)
+
+MSW lives under:
+
+- `src/mocks/data/` — mock datasets (devices, alerts, map)
+- `src/mocks/handlers/` — request handlers per domain
+- `src/mocks/browser.ts` — worker setup
+- `src/mocks/handlers/index.ts` — handler registry
+
+The service worker is served from `public/` (see the `msw.workerDirectory` setting in `package.json`).
+
+---
+
+## Telemetry (frontend)
+
+Telemetry helpers/hooks live in:
+
+- `src/lib/telemetry.ts`
+- `src/lib/hooks/` (error + perf hooks)
+- `src/shared/api/telemetry/` (sanitization + shared helpers)
+
+The goal is to capture:
+
+- UI crashes (Error Boundary)
+- API/query errors (with safe context)
+- basic performance markers (e.g., time to first meaningful content)
+
+Telemetry is controlled via env flags:
+
+- `VITE_TELEMETRY_ENABLED`
+- `VITE_TELEMETRY_CONSOLE`
+
+---
+
+## Source layout (high level)
+
+```text
+src/
+├── app/             # app shell/bootstrap
+├── assets/          # static assets
+├── components/      # shared UI components
+├── features/        # feature modules (Map/Alerts/Devices)
+├── lib/             # utilities + hooks (telemetry, pagination, debounce, etc.)
+├── mocks/           # MSW data + handlers
+├── routes/          # routing configuration/pages
+├── shared/          # shared types + api primitives
+└── test/            # test utilities/setup
+```
+
+---
+
+## Notes
+
+- This project is frontend-first. Backend will be added later.
+- Keep telemetry free of sensitive data (PII). Prefer route names, feature area, status codes, and requestId when available.
