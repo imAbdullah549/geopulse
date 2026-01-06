@@ -7,10 +7,13 @@ import "./index.css";
 
 async function enableMocking() {
   const enable = import.meta.env.VITE_ENABLE_MSW === "true";
-  if (!import.meta.env.DEV || !enable) return;
+  if (!enable) return;
 
   const { worker } = await import("@/mocks/browser");
-  await worker.start({ onUnhandledRequest: "bypass" });
+  await worker.start({
+    onUnhandledRequest: "bypass",
+    serviceWorker: { url: "/mockServiceWorker.js" },
+  });
 }
 
 enableMocking().then(() => {
